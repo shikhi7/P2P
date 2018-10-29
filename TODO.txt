@@ -1,0 +1,6 @@
+1. dht method for leaving of node
+1'. need to update the finger table in a lot of places in between (or maybe use timers?)
+2. updating findNode method properly (updating and checking prev field)
+2'. using locks? (while updating fingertables)
+3. using threads
+4. using sockets
