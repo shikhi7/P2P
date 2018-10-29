@@ -1,4 +1,5 @@
-1. dht method for leaving of node
+0. make the code pluggable (more understandable)
+1. update other fingertables when a node leaves (in leaveNetwork method)
 1'. need to update the finger table in a lot of places in between (or maybe use timers?)
 2. updating findNode method properly (updating and checking prev field)
 2'. using locks? (while updating fingertables)

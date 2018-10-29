@@ -102,6 +102,18 @@ class OverlayDHT:
 
         newNode.updateFinger(self)
 
+    def leaveNetwork(self, node):
+        succNode = node.finger[0]
+        for k, v in node.data.items():
+            succNode.data[k] = v
+        if node.finger[0] == node:
+            self.startNode = None
+        else:
+            node.prev.finger[0] = node.finger[0]
+            node.finger[0] = prev = node.prev
+            if self.startNode == node:
+                self.startNode = node.finger[0]
+
     def updateAllFingerTables(self):
         self.startNode.updateFinger(self)
         curr = self.startNode.finger[0]
@@ -141,7 +153,7 @@ if __name__ == "__main__":
     dht.updateAllFingerTables();
 
     for i in range(5, 1024, 10):
-        dht.putContent(dht.startNode, i, "hello" + str(i))
+        dht.putContent(dht.startNode, i, "content" + str(i))
 
-    for i in range(5, 200, 10):
+    for i in range(5, 800, 40):
         print(dht.getContent(dht.startNode, i))
