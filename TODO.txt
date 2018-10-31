@@ -1,7 +1,4 @@
-0. make the code pluggable (more understandable)
-1. update other fingertables when a node leaves (in leaveNetwork method)
-1'. need to update the finger table in a lot of places in between (or maybe use timers?)
-2. updating findNode method properly (updating and checking prev field)
-2'. using locks? (while updating fingertables)
-3. using threads
-4. using sockets
+4. using sockets(+threads?)
+5. entertain 4 commands: printfingerTable, putContent, getContent, leave
+
+6. update fingertable issue
