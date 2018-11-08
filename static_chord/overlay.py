@@ -173,7 +173,7 @@ class Node(threading.Thread):
         print(sep)
 
     def printMyDataContents(self):
-        print("Contents of node: " + self)
+        print("Contents of node: " + str(self))
         print(sep2)
         for k,v in self.dataTable.items():
             print(str(k) + ":" + v)
