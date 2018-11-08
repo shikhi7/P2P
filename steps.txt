@@ -1,0 +1,18 @@
+1. establish a network between two nodes.
+  1.1 define members for Node class and methods.
+    1.1.1 successor, predecessor, fingertable, file table
+    1.1.2 updating points and tables
+    1.1.3 hashing tech
+  1.2 how does one node know about any node of the network? For now assume new
+  node is given an id by the some DNS based on its hash and returns a pointer
+  to one of the nodes in the network. Now the new node will search for its
+  position the the ring and when found adjusts itself there.
+  1.3. Update the pointers and tables on insertion.
+  1.4 Leave failure of nodes for now.
+  1.5. COMMANDS TO ADDRESS:
+    1.5.1 printFingerTable
+    1.5.2 putContent
+    1.5.3 getContent
+    1.5.4 leave [put hold to it]
+2. expand above to N nodes.
+3. File sharing.
