@@ -7,7 +7,7 @@ import threading
 HASH_BITS = 160
 LOGICAL_SIZE = 2**HASH_BITS
 nodeIP = "127.0.0.1"
-nodePort = 5050
+nodePort = 5065
 sep = "-"*30 + "\n"
 sep2 = "-"*30
 recvBytes = 2048
@@ -94,16 +94,8 @@ class Node(threading.Thread):
 
         startNodeIP, startNodePort = startNodeAdd.split(':')
 
-        print("key = " + str(key) + " currentNode = " + str(self.id))
-        print(sep)
-
-        # if self.id == key:
-        #     newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        #     newsock.connect((startNodeIP, int(startNodePort)))
-        #     newsock.sendall(b'foundNode ' + str(self).encode() + ' ' + str(self.predecessor).encode())
-        #     newsock.close()
-        #     self.printHops(False)
-        #     return
+        # print("key = " + str(key) + " currentNode = " + str(self.id))
+        # print(sep)
 
         if self.endInclusive(key, self.id, self.successor[0]):
             newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -201,7 +193,7 @@ class Node(threading.Thread):
         data = data[len('foundNode '):].split()
         newNodeSucc = data[:3]
         newNodePred = data[3:]
-        print(data)
+        # print(data)
         # newNodePred = [key, ip, port]
         newNodeD = (2*newNodeID) % LOGICAL_SIZE
         i = self.findBestImag(newNodeD)
@@ -249,13 +241,72 @@ class Node(threading.Thread):
             newsock.sendto(updateMsg, (updateNode[1], int(updateNode[2])))
             newsock.close()
 
-
     def getMsgKey(self, msg):
         key = int(sha1(msg.encode('utf-8')).hexdigest(), 16)
         return key
 
     def keyPresent(self, key):
         return (key in self.dataTable)
+
+    # def putContentChord(self, msg):
+    #     key = self.getMsgKey(msg)
+    #     key = key % LOGICAL_SIZE
+    #
+    #     if self.id == key:
+    #         self.dataTable[key] = msg
+    #         self.printHops(False)
+    #         return
+    #
+    #     nextHop = [self.id, self.ip, self.port]
+    #     for i in range(HASH_BITS):
+    #         if self.between(key, self.id, self.fingerTable[i][0]):
+    #             break
+    #         else:
+    #             nextHop = self.fingerTable[i]
+    #
+    #     if nextHop[0] == self.id:
+    #         self.dataTable[key] = msg
+    #         self.printHops(False)
+    #         return
+    #     else:
+    #         self.printHops()
+    #         next_ip = nextHop[1]
+    #         next_port = nextHop[2]
+    #         newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    #         newsock.connect((next_ip, next_port))
+    #         newsock.sendall(b'putContent ' + msg.encode())
+    #         newsock.close()
+
+    def putContentKoorde(self, msg):
+        msgList = msg.split()
+        username = msgList[0]
+        password = msgList[1]
+        msgKey = self.getMsgKey(username)
+        msgKey = msgKey % LOGICAL_SIZE
+
+        newsock_ip = '127.0.0.1'
+        newsock_port = 18111
+        newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        newsock.bind((newsock_ip, newsock_port))
+        i = self.findBestImag(msgKey)
+        self.findNodeKoorde(msgKey, msgKey, i, str(newsock_ip)+':'+str(newsock_port))
+        data, addr = newsock.recvfrom(recvBytes)
+        data = data[len('foundNode '):].split()
+        msgKeySucc = data[:3]
+        newsock.close()
+
+        print("About to put the msg: *"+msg+"* with msgKey "+str(msgKey)+" in node with ID=" + str(msgKeySucc[0]))
+        print(sep)
+        resultString = "putYourContent " + msg
+        self.sock.sendto(resultString, (msgKeySucc[1], int(msgKeySucc[2])))
+
+    def putInMyContent(self, msg):
+        msgList = msg.split()
+        username = msgList[0]
+        password = msgList[1]
+        msgKey = self.getMsgKey(username)
+        msgKey = msgKey % LOGICAL_SIZE
+        self.dataTable[msgKey] = [username, password]
 
     # def getContentChord(self, key):
     #     key = key % LOGICAL_SIZE
@@ -294,34 +345,42 @@ class Node(threading.Thread):
     #         newsock.sendall(b'getContent ' + str(key).encode())
     #         newsock.close()
 
-    # def putContentChord(self, msg):
-    #     key = self.getMsgKey(msg)
-    #     key = key % LOGICAL_SIZE
-    #
-    #     if self.id == key:
-    #         self.dataTable[key] = msg
-    #         self.printHops(False)
-    #         return
-    #
-    #     nextHop = [self.id, self.ip, self.port]
-    #     for i in range(HASH_BITS):
-    #         if self.between(key, self.id, self.fingerTable[i][0]):
-    #             break
-    #         else:
-    #             nextHop = self.fingerTable[i]
-    #
-    #     if nextHop[0] == self.id:
-    #         self.dataTable[key] = msg
-    #         self.printHops(False)
-    #         return
-    #     else:
-    #         self.printHops()
-    #         next_ip = nextHop[1]
-    #         next_port = nextHop[2]
-    #         newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    #         newsock.connect((next_ip, next_port))
-    #         newsock.sendall(b'putContent ' + msg.encode())
-    #         newsock.close()
+    def getContentKoorde(self, msg):
+        msgKey = self.getMsgKey(msg)
+        msgKey = msgKey % LOGICAL_SIZE
+
+        newsock_ip = '127.0.0.1'
+        newsock_port = 18112
+        newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        newsock.bind((newsock_ip, newsock_port))
+        i = self.findBestImag(msgKey)
+        self.findNodeKoorde(msgKey, msgKey, i, str(newsock_ip)+':'+str(newsock_port))
+        data, addr = newsock.recvfrom(recvBytes)
+        data = data[len('foundNode '):].split()
+        msgKeySucc = data[:3]
+        newsock.close()
+
+        print("About to get the msg: *"+msg+"* with msgKey "+str(msgKey)+" from node with ID=" + str(msgKeySucc[0]))
+        print(sep)
+        resultString = "getYourContent " + msg
+        self.sock.sendto(resultString, (msgKeySucc[1], int(msgKeySucc[2])))
+
+    def fetchMyContent(self, msg, queryNode):
+        msgKey = self.getMsgKey(msg)
+        msgKey = msgKey % LOGICAL_SIZE
+        queryNodeIP = queryNode[0]
+        queryNodePort = queryNode[1]
+
+        response = ""
+        if msgKey in self.dataTable.keys():
+            response = self.dataTable[msgKey][1]
+        else:
+            response = "Couldn't find this username!"
+
+        print('About to send the response to msg:*'+msg+'* from my data to queryNode with port:'+ str(queryNodePort) +'. I am nodeID: ' + str(self.id))
+        print(sep)
+        resultString = "responseToQuery " + response
+        self.sock.sendto(resultString, (queryNodeIP, queryNodePort))
 
     def printHops(self, dash=True):
         if dash:
@@ -431,11 +490,36 @@ class Node(threading.Thread):
 
             elif cmd.startswith(b'putContent'):
                 msg = ' '.join(cmd.split()[1:])
-                self.putContent(msg)
+                print("About to invoke putContentKoorde from " + str(self.id) + " for the message: *" + msg +"*")
+                print(sep)
+                thread1 = threading.Thread(target = self.putContentKoorde, args = (msg, ))
+                thread1.start()
+                # self.putContentKoorde(msg)
+
+            elif cmd.startswith(b'putYourContent'):
+                msg = ' '.join(cmd.split()[1:])
+                print('Received a request to add msg:*'+msg+'* into my data. I am nodeID: ' + str(self.id))
+                print(sep)
+                self.putInMyContent(msg)
 
             elif cmd.startswith(b'getContent'):
-                key = int(cmd.split()[1])
-                self.getContent(key)
+                msg = ' '.join(cmd.split()[1:])
+                print("About to invoke getContentKoorde from " + str(self.id) + " for the message: *" + msg +"*")
+                print(sep)
+                thread2 = threading.Thread(target = self.getContentKoorde, args = (msg, ))
+                thread2.start()
+
+            elif cmd.startswith(b'getYourContent'):
+                msg = ' '.join(cmd.split()[1:])
+                print('Received a request to get msg:*'+msg+'* from my data. I am nodeID: ' + str(self.id))
+                print(sep)
+                self.fetchMyContent(msg, addr)
+
+            elif cmd.startswith(b'responseToQuery'):
+                response = ' '.join(cmd.split()[1:])
+                print('Got a response *' + response + '*. I am nodeID: ' + str(self.id))
+                print(sep)
+                # print(response)
 
             elif cmd == b'allContents':
                 self.printMyDataContents()
