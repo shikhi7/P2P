@@ -216,6 +216,7 @@ class Node(threading.Thread):
         # updateMsg = "changeNode 2 " + str([newNodeID, newNode[0], newNode[1]])
         # self.sock.sendto(updateMsg, (newNodeDe[1], newNodeDe[2]))
         self.updateOthers(newNode, newNodePred)
+        self.invokeContentShare(newNodeSucc, newNode)
 
     def updateOthers(self, newNode, newNodePred):
         predID = int(newNodePred[0]) + 1
@@ -240,6 +241,34 @@ class Node(threading.Thread):
             updateMsg = "changeNode 2 " + resultString
             newsock.sendto(updateMsg, (updateNode[1], int(updateNode[2])))
             newsock.close()
+
+    ## ------------------------ content update code -------------------
+    def invokeContentShare(self, succ, newNode):
+        newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        contentMsg = "contentShare " + newNode[0] + " " + str(newNode[1])
+        newsock.sendto(contentMsg, (succ[1], int(succ[2])))
+        newsock.close()
+
+    def sendContentToNewNode(newNodeAddr):
+        newNodeID = getKey(newNodeAddr[0], newNodeAddr[1])
+        contentList = []
+        for k, v in self.dataTable.items():
+            if k <= newNodeID:
+                contentList.append([k, v])
+
+        if len(contentList) > 0:
+            newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            for elem in contentList:
+                ## assuming value is a list
+                elemMsg = 'contentUpdate ' + ' '.join(map(str, elem[1]))
+                newsock.sendto(elemMsg, tuple(newNodeAddr))
+                del self.dataTable[elem[0]]
+            newsock.close()
+
+    def updateMyContent(msg):
+        key = self.getMsgKey(msg[0])
+        self.dataTable[key] = msg
+    ## ------------------------ content update code -------------------
 
     def getMsgKey(self, msg):
         key = int(sha1(msg.encode('utf-8')).hexdigest(), 16)
@@ -542,6 +571,15 @@ class Node(threading.Thread):
                     self.predecessor = [int(lst[2]), lst[3], int(lst[4])]
                 elif (lst[1] == str(2)):
                     self.deBruijnNode = [int(lst[2]), lst[3], int(lst[4])]
+
+            elif cmd.startswith(b'contentShare'):
+                lst = cmd.split()[1:]
+                newNode_addr = [lst[0], int(lst[1])]
+                self.sendContentToNewNode(nodeNode_addr)
+
+            elif cmd.startswith(b'contentUpdate'):
+                lst = cmd.split()[1:]
+                self.updateMyContent(lst)
 
             elif cmd == 'exit':
                 self.sock.sendto('exit', (self.successor[1], self.successor[2]))
