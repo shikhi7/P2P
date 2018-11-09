@@ -7,7 +7,7 @@ import threading
 HASH_BITS = 160
 LOGICAL_SIZE = 2**HASH_BITS
 nodeIP = "127.0.0.1"
-nodePort = 5040
+nodePort = 5050
 sep = "-"*30 + "\n"
 sep2 = "-"*30
 recvBytes = 2048
@@ -117,7 +117,7 @@ class Node(threading.Thread):
         elif self.endInclusive( i, self.id, self.successor[0]):
             next_ip = self.deBruijnNode[1]
             next_port = self.deBruijnNode[2]
-            i = (i<<1)%LOGICAL_SIZE + msb(keyShift)
+            i = (i<<1)%LOGICAL_SIZE + self.msb(keyShift)
             keyShift = (keyShift<<1)%LOGICAL_SIZE
             newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             newsock.connect((next_ip, next_port))
@@ -133,45 +133,58 @@ class Node(threading.Thread):
             newsock.close()
 
     def findBestImag(self, key):
-        return self.id
+        tmp = self.id
+        imaginaryNodes = []
+        lenOfImList = HASH_BITS - 1
 
-    def findNodeChord(self, key, startNodeAdd):
-        key = key % LOGICAL_SIZE
+        for i in range(lenOfImList):
+            nxt = ((tmp<<1)%LOGICAL_SIZE) + self.msb(key)
+            imaginaryNodes.append(nxt)
+            tmp = nxt
+            key = (key<<1)%LOGICAL_SIZE
 
-        startNodeIP, startNodePort = startNodeAdd.split(':')
+        j=0
+        while(j<(HASH_BITS-2) and not self.endInclusive(imaginaryNodes[j], self.id, self.successor[0])):
+            j+=1
+        return imaginaryNodes[j]
 
-        if self.id == key:
-            newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            newsock.connect((startNodeIP, int(startNodePort)))
-            newsock.sendall(b'foundNode ' + str(self).encode())
-            newsock.close()
-            self.printHops(False)
-            return
-
-        nextHop = self.info
-        for i in range(HASH_BITS):
-            if self.between(key, self.id, self.fingerTable[i][0]):
-                break
-            else:
-                nextHop = self.fingerTable[i]
-
-        if nextHop[0] == self.id:
-            # succ_ip = self.fingerTable[0][1]
-            # succ_port = self.fingerTable[0][2]
-            newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            newsock.connect((startNodeIP, int(startNodePort)))
-            newsock.sendall(b'foundNode ' + str(self.fingerTable[0]).encode())
-            newsock.close()
-            self.printHops(False)
-            return
-        else:
-            self.printHops()
-            next_ip = nextHop[1]
-            next_port = nextHop[2]
-            newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            newsock.connect((next_ip, next_port))
-            newsock.sendall(b'findNode ' + str(key).encode() + ' ' + startNodeAdd)
-            newsock.close()
+    # def findNodeChord(self, key, startNodeAdd):
+    #     key = key % LOGICAL_SIZE
+    #
+    #     startNodeIP, startNodePort = startNodeAdd.split(':')
+    #
+    #     if self.id == key:
+    #         newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    #         newsock.connect((startNodeIP, int(startNodePort)))
+    #         newsock.sendall(b'foundNode ' + str(self).encode())
+    #         newsock.close()
+    #         self.printHops(False)
+    #         return
+    #
+    #     nextHop = self.info
+    #     for i in range(HASH_BITS):
+    #         if self.between(key, self.id, self.fingerTable[i][0]):
+    #             break
+    #         else:
+    #             nextHop = self.fingerTable[i]
+    #
+    #     if nextHop[0] == self.id:
+    #         # succ_ip = self.fingerTable[0][1]
+    #         # succ_port = self.fingerTable[0][2]
+    #         newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    #         newsock.connect((startNodeIP, int(startNodePort)))
+    #         newsock.sendall(b'foundNode ' + str(self.fingerTable[0]).encode())
+    #         newsock.close()
+    #         self.printHops(False)
+    #         return
+    #     else:
+    #         self.printHops()
+    #         next_ip = nextHop[1]
+    #         next_port = nextHop[2]
+    #         newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    #         newsock.connect((next_ip, next_port))
+    #         newsock.sendall(b'findNode ' + str(key).encode() + ' ' + startNodeAdd)
+    #         newsock.close()
 
     def joinNetwork(self, newNode):
         newNodeID = getKey(newNode[0], newNode[1])
@@ -244,71 +257,71 @@ class Node(threading.Thread):
     def keyPresent(self, key):
         return (key in self.dataTable)
 
-    def getContent(self, key):
-        key = key % LOGICAL_SIZE
+    # def getContentChord(self, key):
+    #     key = key % LOGICAL_SIZE
+    #
+    #     if self.id == key:
+    #         self.printHops(False)
+    #         ## if this key is present in the table
+    #         if self.keyPresent(key):
+    #             print("Message: " + self.dataTable[key])
+    #         else:
+    #             print("This key does not have an entry")
+    #         print(sep)
+    #         return
+    #
+    #     nextHop = [self.id, self.ip, self.port]
+    #     for i in range(HASH_BITS):
+    #         if self.between(key, self.id, self.fingerTable[i][0]):
+    #             break
+    #         else:
+    #             nextHop = self.fingerTable[i]
+    #
+    #     if nextHop[0] == self.id:
+    #         self.printHops(False)
+    #         if self.keyPresent(key):
+    #             print("Message: " + self.dataTable[key])
+    #         else:
+    #             print("This key does not have an entry")
+    #         print(sep)
+    #         return
+    #     else:
+    #         self.printHops()
+    #         next_ip = nextHop[1]
+    #         next_port = nextHop[2]
+    #         newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    #         newsock.connect((next_ip, next_port))
+    #         newsock.sendall(b'getContent ' + str(key).encode())
+    #         newsock.close()
 
-        if self.id == key:
-            self.printHops(False)
-            ## if this key is present in the table
-            if self.keyPresent(key):
-                print("Message: " + self.dataTable[key])
-            else:
-                print("This key does not have an entry")
-            print(sep)
-            return
-
-        nextHop = [self.id, self.ip, self.port]
-        for i in range(HASH_BITS):
-            if self.between(key, self.id, self.fingerTable[i][0]):
-                break
-            else:
-                nextHop = self.fingerTable[i]
-
-        if nextHop[0] == self.id:
-            self.printHops(False)
-            if self.keyPresent(key):
-                print("Message: " + self.dataTable[key])
-            else:
-                print("This key does not have an entry")
-            print(sep)
-            return
-        else:
-            self.printHops()
-            next_ip = nextHop[1]
-            next_port = nextHop[2]
-            newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            newsock.connect((next_ip, next_port))
-            newsock.sendall(b'getContent ' + str(key).encode())
-            newsock.close()
-
-    def putContent(self, msg):
-        key = self.getMsgKey(msg)
-        key = key % LOGICAL_SIZE
-
-        if self.id == key:
-            self.dataTable[key] = msg
-            self.printHops(False)
-            return
-
-        nextHop = [self.id, self.ip, self.port]
-        for i in range(HASH_BITS):
-            if self.between(key, self.id, self.fingerTable[i][0]):
-                break
-            else:
-                nextHop = self.fingerTable[i]
-
-        if nextHop[0] == self.id:
-            self.dataTable[key] = msg
-            self.printHops(False)
-            return
-        else:
-            self.printHops()
-            next_ip = nextHop[1]
-            next_port = nextHop[2]
-            newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            newsock.connect((next_ip, next_port))
-            newsock.sendall(b'putContent ' + msg.encode())
-            newsock.close()
+    # def putContentChord(self, msg):
+    #     key = self.getMsgKey(msg)
+    #     key = key % LOGICAL_SIZE
+    #
+    #     if self.id == key:
+    #         self.dataTable[key] = msg
+    #         self.printHops(False)
+    #         return
+    #
+    #     nextHop = [self.id, self.ip, self.port]
+    #     for i in range(HASH_BITS):
+    #         if self.between(key, self.id, self.fingerTable[i][0]):
+    #             break
+    #         else:
+    #             nextHop = self.fingerTable[i]
+    #
+    #     if nextHop[0] == self.id:
+    #         self.dataTable[key] = msg
+    #         self.printHops(False)
+    #         return
+    #     else:
+    #         self.printHops()
+    #         next_ip = nextHop[1]
+    #         next_port = nextHop[2]
+    #         newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    #         newsock.connect((next_ip, next_port))
+    #         newsock.sendall(b'putContent ' + msg.encode())
+    #         newsock.close()
 
     def printHops(self, dash=True):
         if dash:
