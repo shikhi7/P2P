@@ -7,7 +7,7 @@ import threading
 HASH_BITS = 160
 LOGICAL_SIZE = 2**HASH_BITS
 nodeIP = "127.0.0.1"
-nodePort = 5065
+nodePort = 5070
 sep = "-"*30 + "\n"
 sep2 = "-"*30
 recvBytes = 2048
@@ -193,7 +193,7 @@ class Node(threading.Thread):
         data = data[len('foundNode '):].split()
         newNodeSucc = data[:3]
         newNodePred = data[3:]
-        # print(data)
+        #  print(data)
         # newNodePred = [key, ip, port]
         newNodeD = (2*newNodeID) % LOGICAL_SIZE
         i = self.findBestImag(newNodeD)
@@ -221,10 +221,8 @@ class Node(threading.Thread):
     def updateOthers(self, newNode, newNodePred):
         predID = int(newNodePred[0]) + 1
         predNodeID = (predID>>1)%LOGICAL_SIZE
+
         if (predNodeID << 1)%LOGICAL_SIZE == predID:
-            """
-               TODO :: CHECK :: EDITED BY MONEY$
-            """
             i = self.findBestImag(predID)
             newsock_ip = '127.0.0.1'
             newsock_port = 18001
@@ -246,16 +244,19 @@ class Node(threading.Thread):
     def invokeContentShare(self, succ, newNode):
         newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         contentMsg = "contentShare " + newNode[0] + " " + str(newNode[1])
+        print(contentMsg)
         newsock.sendto(contentMsg, (succ[1], int(succ[2])))
+        print('sent to succ')
         newsock.close()
 
-    def sendContentToNewNode(newNodeAddr):
+    def sendContentToNewNode(self, newNodeAddr):
         newNodeID = getKey(newNodeAddr[0], newNodeAddr[1])
         contentList = []
         for k, v in self.dataTable.items():
-            if k <= newNodeID:
+            if not self.between(k, newNodeID, self.id):
                 contentList.append([k, v])
 
+        print('sending to new node')
         if len(contentList) > 0:
             newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             for elem in contentList:
@@ -264,8 +265,10 @@ class Node(threading.Thread):
                 newsock.sendto(elemMsg, tuple(newNodeAddr))
                 del self.dataTable[elem[0]]
             newsock.close()
+        print('sent to new node')
 
-    def updateMyContent(msg):
+    def updateMyContent(self, msg):
+        print('updating data')
         key = self.getMsgKey(msg[0])
         self.dataTable[key] = msg
     ## ------------------------ content update code -------------------
@@ -457,7 +460,7 @@ class Node(threading.Thread):
         print("Contents of node: " + str(self))
         print(sep2)
         for k,v in self.dataTable.items():
-            print(str(k) + ":" + v)
+            print(str(k) + ":" + str(v))
         print(sep)
 
     def run(self):
@@ -560,7 +563,9 @@ class Node(threading.Thread):
                 self.printNeighbourInfo()
 
             elif cmd == b'joinNetwork':
-                self.joinNetwork(addr)
+                thread1 = threading.Thread(target = self.joinNetwork, args = (addr, ))
+                thread1.start()
+                #  self.joinNetwork(addr)
 
             elif cmd.startswith(b'changeNode'):
                 # print(cmd)
@@ -575,7 +580,7 @@ class Node(threading.Thread):
             elif cmd.startswith(b'contentShare'):
                 lst = cmd.split()[1:]
                 newNode_addr = [lst[0], int(lst[1])]
-                self.sendContentToNewNode(nodeNode_addr)
+                self.sendContentToNewNode(newNode_addr)
 
             elif cmd.startswith(b'contentUpdate'):
                 lst = cmd.split()[1:]
