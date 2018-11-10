@@ -6,8 +6,9 @@ import threading
 
 HASH_BITS = 160
 LOGICAL_SIZE = 2**HASH_BITS
-nodeIP = "127.0.0.1"
-nodePort = 5070
+# nodeIP = "nodeIP"
+nodeIP = "192.168.137.87"
+nodePort = 4505
 sep = "-"*30 + "\n"
 sep2 = "-"*30
 recvBytes = 2048
@@ -96,6 +97,8 @@ class Node(threading.Thread):
 
         # print("key = " + str(key) + " currentNode = " + str(self.id))
         # print(sep)
+        print("In findNode() method of node: " + str(self) + " for the key: " + str(key))
+        print(sep)
 
         if self.endInclusive(key, self.id, self.successor[0]):
             newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -180,8 +183,11 @@ class Node(threading.Thread):
 
     def joinNetwork(self, newNode):
         newNodeID = getKey(newNode[0], newNode[1])
-        newsock_ip = '127.0.0.1'
+        newsock_ip = nodeIP
         newsock_port = 18001
+
+        print("Got a request to add new node: " + newNode[0] + ":" + str(newNode[1]) + ". I am node: " + str(self) )
+        print(sep)
 
         newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         newsock.bind((newsock_ip, newsock_port))
@@ -222,7 +228,7 @@ class Node(threading.Thread):
 
         if (predNodeID << 1)%LOGICAL_SIZE == predID:
             i = self.findBestImag(predID)
-            newsock_ip = '127.0.0.1'
+            newsock_ip = nodeIP
             newsock_port = 18001
 
             newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -237,6 +243,9 @@ class Node(threading.Thread):
             resultString = str(newNodeID) + " " + newNode[0] + " " + str(newNode[1])
 
             updateMsg = "changeNode 2 " + resultString
+            print(str(updateNode))
+            print(updateMsg)
+            print(sep)
             newsock.sendto(updateMsg, (updateNode[1], int(updateNode[2])))
             newsock.close()
 
@@ -315,7 +324,7 @@ class Node(threading.Thread):
         msgKey = self.getMsgKey(username)
         msgKey = msgKey % LOGICAL_SIZE
 
-        newsock_ip = '127.0.0.1'
+        newsock_ip = nodeIP
         newsock_port = 18111
         newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         newsock.bind((newsock_ip, newsock_port))
@@ -326,7 +335,7 @@ class Node(threading.Thread):
         msgKeySucc = data[:3]
         newsock.close()
 
-        print("About to put the msg: *"+msg+"* with msgKey "+str(msgKey)+" in node with ID=" + str(msgKeySucc[0]))
+        print("About to put the msg: *"+msg+"* with msgKey "+str(msgKey)+" in node: " + str(msgKeySucc))
         print(sep)
         resultString = "putYourContent " + msg
         self.sock.sendto(resultString, (msgKeySucc[1], int(msgKeySucc[2])))
@@ -380,7 +389,7 @@ class Node(threading.Thread):
         msgKey = self.getMsgKey(msg)
         msgKey = msgKey % LOGICAL_SIZE
 
-        newsock_ip = '127.0.0.1'
+        newsock_ip = nodeIP
         newsock_port = 18112
         newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         newsock.bind((newsock_ip, newsock_port))
@@ -391,7 +400,7 @@ class Node(threading.Thread):
         msgKeySucc = data[:3]
         newsock.close()
 
-        print("About to get the msg: *"+msg+"* with msgKey "+str(msgKey)+" from node with ID=" + str(msgKeySucc[0]))
+        print("About to get the msg: *"+msg+"* with msgKey "+str(msgKey)+" from node: " + str(msgKeySucc))
         print(sep)
         resultString = "getYourContent " + msg
         self.sock.sendto(resultString, (msgKeySucc[1], int(msgKeySucc[2])))
@@ -408,7 +417,7 @@ class Node(threading.Thread):
         else:
             response = "Couldn't find this username!"
 
-        print('About to send the response to msg:*'+msg+'* from my data to queryNode with port:'+ str(queryNodePort) +'. I am nodeID: ' + str(self.id))
+        print('About to send the response to msg:*'+msg+'* from my data to queryNode: '+ queryNodeIP + ":" + str(queryNodePort) +'. I am node: ' + str(self))
         print(sep)
         resultString = "responseToQuery " + response
         self.sock.sendto(resultString, (queryNodeIP, queryNodePort))
@@ -433,7 +442,7 @@ class Node(threading.Thread):
     #         print(sep)
 
     def printNodesKoorde(self, startNode):
-        print(self.id)
+        print(self)
         if self.successor[0] != startNode:
             succ_ip = self.successor[1]
             succ_port = self.successor[2]
@@ -445,7 +454,7 @@ class Node(threading.Thread):
             print(sep)
 
     def printNeighbourInfo(self):
-        print("I am " + self)
+        print("I am " + str(self))
         print("My successor is " + str(self.successor))
         print("My predecessor is " + str(self.predecessor))
         print("My deBruijn node is " + str(self.deBruijnNode))
@@ -457,7 +466,7 @@ class Node(threading.Thread):
         print(sep)
 
     def printMyDataContents(self):
-        print("Contents of node: " + str(self))
+        print("Contents of node: " + str(self) + " are: ")
         print(sep2)
         for k,v in self.dataTable.items():
             print(str(k) + ":" + str(v))
@@ -486,6 +495,8 @@ class Node(threading.Thread):
             self.successor = [int(data[0]), data[1], int(data[2])]
             self.predecessor = [int(data[3]), data[4], int(data[5])]
             self.deBruijnNode = [int(data[6]), data[7], int(data[8])]
+            print("I have joined the network! Here are my neighbours:")
+            self.printNeighbourInfo()
 
         while True:
 
@@ -522,7 +533,7 @@ class Node(threading.Thread):
 
             elif cmd.startswith(b'putContent'):
                 msg = ' '.join(cmd.split()[1:])
-                print("About to invoke putContentKoorde from " + str(self.id) + " for the message: *" + msg +"*")
+                print("About to invoke putContentKoorde from node: " + str(self) + " for the message: *" + msg +"*")
                 print(sep)
                 thread1 = threading.Thread(target = self.putContentKoorde, args = (msg, ))
                 thread1.start()
@@ -530,30 +541,30 @@ class Node(threading.Thread):
 
             elif cmd.startswith(b'putYourContent'):
                 msg = ' '.join(cmd.split()[1:])
-                print('Received a request to add msg:*'+msg+'* into my data. I am nodeID: ' + str(self.id))
+                print('Received a request to add msg:*'+msg+'* into my data. I am node: ' + str(self))
                 print(sep)
                 self.putInMyContent(msg)
 
             elif cmd.startswith(b'getContent'):
                 msg = ' '.join(cmd.split()[1:])
-                print("About to invoke getContentKoorde from " + str(self.id) + " for the message: *" + msg +"*")
+                print("About to invoke getContentKoorde from node: " + str(self) + " for the message: *" + msg +"*")
                 print(sep)
                 thread2 = threading.Thread(target = self.getContentKoorde, args = (msg, ))
                 thread2.start()
 
             elif cmd.startswith(b'getYourContent'):
                 msg = ' '.join(cmd.split()[1:])
-                print('Received a request to get msg:*'+msg+'* from my data. I am nodeID: ' + str(self.id))
+                print('Received a request to get msg:*'+msg+'* from my data. I am node: ' + str(self))
                 print(sep)
                 self.fetchMyContent(msg, addr)
 
             elif cmd.startswith(b'responseToQuery'):
                 response = ' '.join(cmd.split()[1:])
-                print('Got a response *' + response + '*. I am nodeID: ' + str(self.id))
+                print('Got a response *' + response + '*. I am node: ' + str(self))
                 print(sep)
                 # print(response)
 
-            elif cmd == b'allContents':
+            elif cmd == b'myContents':
                 self.printMyDataContents()
 
             # elif cmd == b'fingerTable':
@@ -572,10 +583,16 @@ class Node(threading.Thread):
                 lst = cmd.split()
                 if lst[1] == '0':
                     self.successor = [int(lst[2]), lst[3], int(lst[4])]
+                    print("Updating my successor to " + str(self.successor))
+                    print(sep)
                 elif (lst[1] == str(1)):
                     self.predecessor = [int(lst[2]), lst[3], int(lst[4])]
+                    print("Updating my predecessor to " + str(self.predecessor))
+                    print(sep)
                 elif (lst[1] == str(2)):
                     self.deBruijnNode = [int(lst[2]), lst[3], int(lst[4])]
+                    print("Updating my deBruijnNode to " + str(self.deBruijnNode))
+                    print(sep)
 
             elif cmd.startswith(b'contentShare'):
                 lst = cmd.split()[1:]

@@ -12,7 +12,8 @@ while True:
         # ip, port = nodeAddr.split(':')
         port = int(nodeAddr)
         # port = int(port)
-        ip = "127.0.0.1"
+        # ip = "127.0.0.1"
+        ip = "192.168.137.87"
         cmd = input("Enter Command: ")
         cmd = str.encode(cmd)
         sock.connect((ip, port))
