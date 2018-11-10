@@ -182,25 +182,23 @@ class Node(threading.Thread):
         newNodeID = getKey(newNode[0], newNode[1])
         newsock_ip = '127.0.0.1'
         newsock_port = 18001
+
         newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         newsock.bind((newsock_ip, newsock_port))
+
         i = self.findBestImag(newNodeID)
         self.findNodeKoorde(newNodeID, newNodeID, i, str(newsock_ip)+':'+str(newsock_port))
+
         data, addr = newsock.recvfrom(recvBytes)
-        # print(sep)
-        # print(data)
-        # print(sep)
         data = data[len('foundNode '):].split()
         newNodeSucc = data[:3]
         newNodePred = data[3:]
-        #  print(data)
-        # newNodePred = [key, ip, port]
+
         newNodeD = (2*newNodeID) % LOGICAL_SIZE
         i = self.findBestImag(newNodeD)
         self.findNodeKoorde(newNodeD, newNodeD, i, str(newsock_ip)+':'+str(newsock_port))
+
         data, addr = newsock.recvfrom(recvBytes)
-        # data = data.split()
-        # newNodeDe = data[2][1:-1].split(',')
         data = data[len('foundNode '):].split()
         newNodeDe = data[3:]
         newsock.close()
@@ -211,10 +209,10 @@ class Node(threading.Thread):
         resultString = str(newNodeID) + " " + newNode[0] + " " + str(newNode[1])
         updateMsg = "changeNode 0 " + resultString
         self.sock.sendto(updateMsg, (newNodePred[1], int(newNodePred[2])))
+
         updateMsg = "changeNode 1 " + resultString
         self.sock.sendto(updateMsg, (newNodeSucc[1], int(newNodeSucc[2])))
-        # updateMsg = "changeNode 2 " + str([newNodeID, newNode[0], newNode[1]])
-        # self.sock.sendto(updateMsg, (newNodeDe[1], newNodeDe[2]))
+
         self.updateOthers(newNode, newNodePred)
         self.invokeContentShare(newNodeSucc, newNode)
 
@@ -226,16 +224,18 @@ class Node(threading.Thread):
             i = self.findBestImag(predID)
             newsock_ip = '127.0.0.1'
             newsock_port = 18001
+
             newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             newsock.bind((newsock_ip, newsock_port))
+
             self.findNodeKoorde(predID, predID, i, str(newsock_ip)+':'+str(newsock_port))
             data, addr = newsock.recvfrom(recvBytes)
-            # data = data.split()
-            # updateNode = data[1][1:-1].split(',')
             data = data[len('foundNode '): ].split()
+
             updateNode = data[:3]
             newNodeID = getKey(newNode[0], newNode[1])
             resultString = str(newNodeID) + " " + newNode[0] + " " + str(newNode[1])
+
             updateMsg = "changeNode 2 " + resultString
             newsock.sendto(updateMsg, (updateNode[1], int(updateNode[2])))
             newsock.close()
@@ -244,9 +244,8 @@ class Node(threading.Thread):
     def invokeContentShare(self, succ, newNode):
         newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         contentMsg = "contentShare " + newNode[0] + " " + str(newNode[1])
-        print(contentMsg)
         newsock.sendto(contentMsg, (succ[1], int(succ[2])))
-        print('sent to succ')
+        #  print('sent to succ')
         newsock.close()
 
     def sendContentToNewNode(self, newNodeAddr):
@@ -256,7 +255,7 @@ class Node(threading.Thread):
             if not self.between(k, newNodeID, self.id):
                 contentList.append([k, v])
 
-        print('sending to new node')
+        #  print('sending to new node')
         if len(contentList) > 0:
             newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             for elem in contentList:
@@ -265,10 +264,10 @@ class Node(threading.Thread):
                 newsock.sendto(elemMsg, tuple(newNodeAddr))
                 del self.dataTable[elem[0]]
             newsock.close()
-        print('sent to new node')
+        #  print('sent to new node')
 
     def updateMyContent(self, msg):
-        print('updating data')
+        #  print('updating data')
         key = self.getMsgKey(msg[0])
         self.dataTable[key] = msg
     ## ------------------------ content update code -------------------
@@ -600,20 +599,17 @@ class Node(threading.Thread):
 if __name__ == "__main__":
     Nnodes = int(input("Number of nodes: "))
     allNodes = []
-    print("Nodes in the network:")
     for i in range(Nnodes):
         allNodes.append([getKey(nodeIP, nodePort+i), nodeIP, nodePort+i])
-        # print(allNodes[i])
 
     allNodes.sort()
 
+    print("Nodes in the network:")
     for i in allNodes:
         print(i)
-
     print(sep)
 
     nodeThreads = []
-
     for i in range(Nnodes):
         nodeThread = Node(allNodes[i][1], allNodes[i][2])
         nodeThread.start()
