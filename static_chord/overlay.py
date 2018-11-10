@@ -6,9 +6,9 @@ import threading
 
 HASH_BITS = 160
 LOGICAL_SIZE = 2**HASH_BITS
-# nodeIP = "nodeIP"
 nodeIP = "127.0.0.1"
-nodePort = 4550
+# nodeIP = "192.168.137.87"
+nodePort = 4505
 sep = "-"*30 + "\n"
 sep2 = "-"*30
 recvBytes = 2048
@@ -54,9 +54,11 @@ class Node(threading.Thread):
             if (self.id == i[0]):
                 myIndex = idx
                 break
+
         allNodesSize = len(allNodes)
         self.predecessor = allNodes[(myIndex-1)%allNodesSize]
         self.successor = allNodes[(myIndex+1)%allNodesSize]
+
         deBIdx = -1
         for idx, i in enumerate(allNodes):
             if i[0] > (2*(self.id)%LOGICAL_SIZE):
@@ -92,7 +94,6 @@ class Node(threading.Thread):
 
     def findNodeKoorde(self, key, keyShift, i, startNodeAdd):
         key = key % LOGICAL_SIZE
-
         startNodeIP, startNodePort = startNodeAdd.split(':')
 
         print("In findNode() method of node: " + str(self) + " for the key: " + str(key))
@@ -108,14 +109,16 @@ class Node(threading.Thread):
             return
 
         elif self.endInclusive( i, self.id, self.successor[0]):
-            print("yo boy")
+            # print("yo boy")
             next_ip = self.deBruijnNode[1]
             next_port = self.deBruijnNode[2]
             i = (i<<1)%LOGICAL_SIZE + self.msb(keyShift)
             keyShift = (keyShift<<1)%LOGICAL_SIZE
+
             while( self.endInclusive(i, self.id, self.successor[0]) and self.id == self.deBruijnNode[0]):
                 i = (i<<1)%LOGICAL_SIZE + self.msb(keyShift)
                 keyShift = (keyShift<<1)%LOGICAL_SIZE
+
             newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             newsock.connect((next_ip, next_port))
             newsock.sendall(b'findNode ' + str(key).encode() + ' ' + str(keyShift).encode() + ' ' + str(i).encode() + ' ' + startNodeAdd)
@@ -246,21 +249,23 @@ class Node(threading.Thread):
             resultString = str(newNodeID) + " " + newNode[0] + " " + str(newNode[1])
 
             updateMsg = "changeNode 2 " + resultString
-            print(str(updateNode))
-            print(updateMsg)
-            print(sep)
+            # print(str(updateNode))
+            # print(updateMsg)
+            # print(sep)
             newsock.sendto(updateMsg, (updateNode[1], int(updateNode[2])))
             newsock.close()
 
     ## ------------------------ content update code -------------------
+
     def invokeContentShare(self, succ, newNode):
         newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         contentMsg = "contentShare " + newNode[0] + " " + str(newNode[1])
         newsock.sendto(contentMsg, (succ[1], int(succ[2])))
-        #  print('sent to succ')
+        print('Invoking the successor of new node to share content belonging to new node')
         newsock.close()
 
     def sendContentToNewNode(self, newNodeAddr):
+        print("Sending contents belonging to new node")
         newNodeID = getKey(newNodeAddr[0], newNodeAddr[1])
         contentList = []
         for k, v in self.dataTable.items():
@@ -279,7 +284,7 @@ class Node(threading.Thread):
         #  print('sent to new node')
 
     def updateMyContent(self, msg):
-        #  print('updating data')
+        print('Receiving and updating my content as a new node')
         key = self.getMsgKey(msg[0])
         self.dataTable[key] = msg
     ## ------------------------ content update code -------------------
@@ -333,6 +338,7 @@ class Node(threading.Thread):
         newsock.bind((newsock_ip, newsock_port))
         i = self.findBestImag(msgKey)
         self.findNodeKoorde(msgKey, msgKey, i, str(newsock_ip)+':'+str(newsock_port))
+
         data, addr = newsock.recvfrom(recvBytes)
         data = data[len('foundNode '):].split()
         msgKeySucc = data[:3]
@@ -340,6 +346,7 @@ class Node(threading.Thread):
 
         print("About to put the msg: *"+msg+"* with msgKey "+str(msgKey)+" in node: " + str(msgKeySucc))
         print(sep)
+
         resultString = "putYourContent " + msg
         self.sock.sendto(resultString, (msgKeySucc[1], int(msgKeySucc[2])))
 
@@ -398,6 +405,7 @@ class Node(threading.Thread):
         newsock.bind((newsock_ip, newsock_port))
         i = self.findBestImag(msgKey)
         self.findNodeKoorde(msgKey, msgKey, i, str(newsock_ip)+':'+str(newsock_port))
+
         data, addr = newsock.recvfrom(recvBytes)
         data = data[len('foundNode '):].split()
         msgKeySucc = data[:3]
@@ -405,6 +413,7 @@ class Node(threading.Thread):
 
         print("About to get the msg: *"+msg+"* with msgKey "+str(msgKey)+" from node: " + str(msgKeySucc))
         print(sep)
+
         resultString = "getYourContent " + msg
         self.sock.sendto(resultString, (msgKeySucc[1], int(msgKeySucc[2])))
 
