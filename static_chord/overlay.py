@@ -95,8 +95,6 @@ class Node(threading.Thread):
 
         startNodeIP, startNodePort = startNodeAdd.split(':')
 
-        # print("key = " + str(key) + " currentNode = " + str(self.id))
-        # print(sep)
         print("In findNode() method of node: " + str(self) + " for the key: " + str(key))
         print(sep)
 
@@ -261,7 +259,7 @@ class Node(threading.Thread):
         newNodeID = getKey(newNodeAddr[0], newNodeAddr[1])
         contentList = []
         for k, v in self.dataTable.items():
-            if not self.between(k, newNodeID, self.id):
+            if not self.endInclusive(k, newNodeID, self.id):
                 contentList.append([k, v])
 
         #  print('sending to new node')
@@ -472,6 +470,15 @@ class Node(threading.Thread):
             print(str(k) + ":" + str(v))
         print(sep)
 
+    def printAllContents(self, startNodeID=None):
+        if (self.id == startNodeID):
+            return
+        elif (startNodeID == None):
+            startNodeID = self.id
+        self.printMyDataContents()
+        resultString = 'allContents ' + str(startNodeID)
+        self.sock.sendto(resultString, (self.successor[1], self.successor[2]))
+
     def run(self):
         # self.updateFingerTable()
         if not self.dynamicNode:
@@ -562,10 +569,17 @@ class Node(threading.Thread):
                 response = ' '.join(cmd.split()[1:])
                 print('Got a response *' + response + '*. I am node: ' + str(self))
                 print(sep)
-                # print(response)
 
             elif cmd == b'myContents':
                 self.printMyDataContents()
+
+            elif cmd.startswith(b'allContents'):
+                lst = cmd.split()
+                if len(lst) == 1:
+                    #startNode
+                    self.printAllContents()
+                else:
+                    self.printAllContents(int(lst[1]))
 
             # elif cmd == b'fingerTable':
             #     self.printFingerTable()
