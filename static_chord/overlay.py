@@ -62,7 +62,7 @@ class Node(threading.Thread):
             if i[0] > (2*(self.id)%LOGICAL_SIZE):
                 deBIdx = idx
                 break
-        self.deBruijnNode = allNodes[deBIdx-1]
+        self.deBruijnNode = allNodes[(deBIdx-1)%allNodesSize]
 
     def between(self, n1, n2, n3):
         ## if n1 is in between n2 and n3
@@ -108,10 +108,14 @@ class Node(threading.Thread):
             return
 
         elif self.endInclusive( i, self.id, self.successor[0]):
+            print("yo boy")
             next_ip = self.deBruijnNode[1]
             next_port = self.deBruijnNode[2]
             i = (i<<1)%LOGICAL_SIZE + self.msb(keyShift)
             keyShift = (keyShift<<1)%LOGICAL_SIZE
+            while( self.endInclusive(i, self.id, self.successor[0]) and self.id == self.deBruijnNode[0]):
+                i = (i<<1)%LOGICAL_SIZE + self.msb(keyShift)
+                keyShift = (keyShift<<1)%LOGICAL_SIZE
             newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             newsock.connect((next_ip, next_port))
             newsock.sendall(b'findNode ' + str(key).encode() + ' ' + str(keyShift).encode() + ' ' + str(i).encode() + ' ' + startNodeAdd)
@@ -136,6 +140,7 @@ class Node(threading.Thread):
             tmp = nxt
             key = (key<<1)%LOGICAL_SIZE
 
+        imaginaryNodes.reverse()
         j=0
         while(j<(HASH_BITS-2) and not self.endInclusive(imaginaryNodes[j], self.id, self.successor[0])):
             j+=1
@@ -534,7 +539,7 @@ class Node(threading.Thread):
                 lst = cmd[len('foundNode '):].split()
                 targetNode = lst[:3]
                 targetPred = lst[3:]
-                print("nodeID: " + str(self.id))
+                print("I am node: " + str(self))
                 print("Target node is " + str(targetNode))
                 print(sep)
 
