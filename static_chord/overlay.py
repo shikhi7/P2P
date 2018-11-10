@@ -446,9 +446,10 @@ class Node(threading.Thread):
             print(sep)
 
     def printNeighbourInfo(self):
-        print(self.successor)
-        print(self.predecessor)
-        print(self.deBruijnNode)
+        print("I am " + self)
+        print("My successor is " + str(self.successor))
+        print("My predecessor is " + str(self.predecessor))
+        print("My deBruijn node is " + str(self.deBruijnNode))
         print(sep)
 
     def printFingerTable(self):
