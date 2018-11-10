@@ -7,8 +7,8 @@ import threading
 HASH_BITS = 160
 LOGICAL_SIZE = 2**HASH_BITS
 # nodeIP = "nodeIP"
-nodeIP = "192.168.137.87"
-nodePort = 4505
+nodeIP = "127.0.0.1"
+nodePort = 4550
 sep = "-"*30 + "\n"
 sep2 = "-"*30
 recvBytes = 2048
