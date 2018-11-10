@@ -233,14 +233,14 @@ class Node(threading.Thread):
         predNodeID = (predID>>1)%LOGICAL_SIZE
 
         if (predNodeID << 1)%LOGICAL_SIZE == predID:
-            i = self.findBestImag(predID)
+            i = self.findBestImag(predNodeID)
             newsock_ip = nodeIP
             newsock_port = 18001
 
             newsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             newsock.bind((newsock_ip, newsock_port))
 
-            self.findNodeKoorde(predID, predID, i, str(newsock_ip)+':'+str(newsock_port))
+            self.findNodeKoorde(predNodeID, predNodeID, i, str(newsock_ip)+':'+str(newsock_port))
             data, addr = newsock.recvfrom(recvBytes)
             data = data[len('foundNode '): ].split()
 
@@ -262,10 +262,12 @@ class Node(threading.Thread):
         contentMsg = "contentShare " + newNode[0] + " " + str(newNode[1])
         newsock.sendto(contentMsg, (succ[1], int(succ[2])))
         print('Invoking the successor of new node to share content belonging to new node')
+        print(sep)
         newsock.close()
 
     def sendContentToNewNode(self, newNodeAddr):
         print("Sending contents belonging to new node")
+        print(sep)
         newNodeID = getKey(newNodeAddr[0], newNodeAddr[1])
         contentList = []
         for k, v in self.dataTable.items():
@@ -285,6 +287,7 @@ class Node(threading.Thread):
 
     def updateMyContent(self, msg):
         print('Receiving and updating my content as a new node')
+        print(sep)
         key = self.getMsgKey(msg[0])
         self.dataTable[key] = msg
     ## ------------------------ content update code -------------------
